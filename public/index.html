@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bot WA Web Terminal & Panel</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Bot WA Web Terminal & Panel</h1>
+
+    <div id="bot-status">Bot Status: <span id="status-text">Offline</span></div>
+    <button id="start-btn">Start Bot</button>
+    <button id="stop-btn" disabled>Stop Bot</button>
+
+    <h2>Terminal</h2>
+    <div id="terminal"></div>
+
+    <h2>Bot Log</h2>
+    <pre id="bot-log"></pre>
+  </div>
+
+  <script>
+    const socket = io();
+    const term = new Terminal({cols: 80, rows: 24});
+    term.open(document.getElementById('terminal'));
+
+    const statusText = document.getElementById('status-text');
+    const startBtn = document.getElementById('start-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    const botLog = document.getElementById('bot-log');
+
+    term.onData(data => socket.emit('input', data));
+    socket.on('output', data => term.write(data));
+
+    socket.on('bot-status', status => {
+      statusText.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+      if (status === 'online') {
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+      } else {
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+      }
+    });
+
+    socket.on('bot-log', data => {
+      botLog.textContent += data;
+      botLog.scrollTop = botLog.scrollHeight;
+    });
+
+    startBtn.onclick = () => socket.emit('bot-start');
+    stopBtn.onclick = () => socket.emit('bot-stop');
+  </script>
+</body>
+</html>
